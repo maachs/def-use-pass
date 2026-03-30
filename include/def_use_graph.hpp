@@ -27,7 +27,8 @@ namespace llvm {
             LLVMContext &Ctx = M.getContext();
             Type *VoidTy = Type::getVoidTy(Ctx);
             Type *Int32Ty = Type::getInt32Ty(Ctx);
-            FunctionType *PrintFuncTy = FunctionType::get(VoidTy, {Int32Ty}, false);
+            Type *Int64Ty = Type::getInt64Ty(Ctx);
+            FunctionType *PrintFuncTy = FunctionType::get(VoidTy, {Int32Ty, Int64Ty}, false);
             FunctionCallee PrintFunc = M.getOrInsertFunction("dump_val", PrintFuncTy);
 
             bool Modified = false;
@@ -62,6 +63,14 @@ namespace llvm {
                     for (llvm::BasicBlock::iterator instr_it = bb.begin(); instr_it != instr_end; ++instr_it) {
                         llvm::Instruction &instr = *instr_it;
 
+                        if (auto *call = llvm::dyn_cast<llvm::CallInst>(&instr)) {
+                            if (auto *callee = call->getCalledFunction()) {
+                                if (callee->getName() == "dump_val") {
+                                    continue;
+                                }
+                            }
+                        }
+
                         Out << "    \"node_" << &instr << "\" [label=\"{INST | " << getLabel(&instr) << "}\"];\n";
 
                         auto op_end = instr.op_end();
@@ -78,7 +87,8 @@ namespace llvm {
 
                             IRBuilder<> Builder(instr.getNextNode());
 
-                            Builder.CreateCall(PrintFunc, {&instr});
+                            Value *AddrAsInt = Builder.getInt64((uintptr_t)&instr);
+                            Builder.CreateCall(PrintFunc, {&instr, AddrAsInt});
 
                             Modified = true;
 
@@ -88,18 +98,16 @@ namespace llvm {
                 Out << "  }\n";
             }
 
-            Out << "}\n";
             Out.close();
 
-            //errs() << "[DefUseGraph] Graph written to defuse_graph.dot\n";
-
             if (Modified) {
-                errs() << "[DefUseGraph] Instrumented i32 values and wrote graph.\n";
+                errs() << "Graph is wrote\n";
                 return PreservedAnalyses::none();
             }
 
             return PreservedAnalyses::all();
         }
+
     private:
         static std::string sanitize(std::string str) {
             std::string res;
