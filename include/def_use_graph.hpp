@@ -4,9 +4,12 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IRBuilder.h"
 
 namespace llvm {
     class DefUseGraphPass : public PassInfoMixin<DefUseGraphPass> {
@@ -21,30 +24,38 @@ namespace llvm {
                 return PreservedAnalyses::all();
             }
 
+            LLVMContext &Ctx = M.getContext();
+            Type *VoidTy = Type::getVoidTy(Ctx);
+            Type *Int32Ty = Type::getInt32Ty(Ctx);
+            FunctionType *PrintFuncTy = FunctionType::get(VoidTy, {Int32Ty}, false);
+            FunctionCallee PrintFunc = M.getOrInsertFunction("dump_val", PrintFuncTy);
+
+            bool Modified = false;
+
             Out << "digraph DefUseGraph {\n";
             Out << "  node [shape=record, fontname=\"Courier\", fontsize=10];\n";
             Out << "  edge [fontsize=8];\n";
 
             auto module_end = M.end();
             for (llvm::Module::iterator f_it = M.begin(); f_it != module_end; ++f_it) {
-                llvm::Function &F = *f_it;
+                llvm::Function &func = *f_it;
 
-                if (F.isDeclaration()) continue; //skip ex func
+                if (func.isDeclaration() || func.getName() == "dump_val") continue; //skip ex func
 
-                Out << "  subgraph \"cluster_" << F.getName() << "\" {\n";
-                Out << "    label = \"Function: " << F.getName() << "\";\n";
+                Out << "  subgraph \"cluster_" << func.getName() << "\" {\n";
+                Out << "    label = \"Function: " << func.getName() << "\";\n";
                 Out << "    color = blue;\n";
 
-                auto arg_end = F.arg_end();
-                for (llvm::Function::arg_iterator arg_it = F.arg_begin(); arg_it != arg_end; ++arg_it) {
+                auto arg_end = func.arg_end();
+                for (llvm::Function::arg_iterator arg_it = func.arg_begin(); arg_it != arg_end; ++arg_it) {
                     llvm::Argument &arg = *arg_it;
 
                     Out << "    \"node_" << &arg << "\" [label=\"{ARG: " << arg.getName()
                         << " | " << getLabel(&arg) << "}\", color=blue, style=filled, fillcolor=lightcyan];\n";
                 }
 
-                auto bb_end = F.end();
-                for (llvm::Function::iterator bb_it = F.begin(); bb_it != bb_end; ++bb_it) {
+                auto bb_end = func.end();
+                for (llvm::Function::iterator bb_it = func.begin(); bb_it != bb_end; ++bb_it) {
                     llvm::BasicBlock &bb = *bb_it;
 
                     auto instr_end = bb.end();
@@ -60,6 +71,18 @@ namespace llvm {
                             if (llvm::isa<llvm::Constant>(op) || llvm::isa<llvm::BasicBlock>(op)) continue; //skip const and bb
                             Out << "    \"node_" << op << "\" -> \"node_" << &instr << "\" [label=\"use\"];\n";
                         }
+
+                        if (instr.getType()->isIntegerTy(32)) {
+                            if (isa<PHINode>(&instr)) continue;
+                            if (instr.isTerminator()) continue;
+
+                            IRBuilder<> Builder(instr.getNextNode());
+
+                            Builder.CreateCall(PrintFunc, {&instr});
+
+                            Modified = true;
+
+                        }
                     }
                 }
                 Out << "  }\n";
@@ -68,7 +91,12 @@ namespace llvm {
             Out << "}\n";
             Out.close();
 
-            errs() << "[DefUseGraph] Graph written to defuse_graph.dot\n";
+            //errs() << "[DefUseGraph] Graph written to defuse_graph.dot\n";
+
+            if (Modified) {
+                errs() << "[DefUseGraph] Instrumented i32 values and wrote graph.\n";
+                return PreservedAnalyses::none();
+            }
 
             return PreservedAnalyses::all();
         }
@@ -92,6 +120,6 @@ namespace llvm {
             return sanitize(str);
         }
     };
-}
 
+}
 #endif
