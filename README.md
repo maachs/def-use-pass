@@ -12,11 +12,11 @@ make
 ```
 Prepare tests/test.c file
 
-# TODO[flops]: Make script for this
+
 ```bash
 cd ..
 chmod +x run.sh
 ./run.sh
 ```
-
+# Example of result graph
 ![alt text](./images/result.png)
