@@ -4,6 +4,7 @@
 
 ## Build and Run Instruction
 
+# TODO[niten]: This seems to be not entirely true :)
 ```bash
 mkdir build
 cd build
