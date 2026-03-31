@@ -26,9 +26,11 @@ include_directories(include)
 
 add_llvm_pass_plugin(DefUseGraph ${SOURCE_FILES})
 
+# FIXME[niten]: opt is already linked against LLVM core libraries, this breaks build (in my case at least)
 llvm_map_components_to_libnames(llvm_libs Core Support Passes IRReader)
 target_link_libraries(DefUseGraph PRIVATE ${llvm_libs})
 
+# FIXME[niten]: Debug already has debug info and hardcoding these flags may be incompatible in some cases
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(DefUseGraph PRIVATE -g -O0)
 endif()
