@@ -11,8 +11,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SOURCE_FILES
-    src/def_use_graph.cpp
-    src/dot_tools.cpp
+    src/DefUseGraph.cpp
+    src/GraphTools.cpp
 )
 
 add_llvm_pass_plugin(DefUseGraph ${SOURCE_FILES})

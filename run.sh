@@ -5,7 +5,7 @@ BUILD_DIR="build"
 INC_DIR="include"
 PLUGIN="./build/DefUseGraph.so"
 
-rm -f defuse_graph.dot result.png
+rm -f ${BUILD_DIR}/defuse_graph.dot result.png
 
 clang-14 -S -emit-llvm ${TEST_DIR}/${TEST_NAME}.c -o ${TEST_DIR}/${TEST_NAME}.ll || exit 1
 
