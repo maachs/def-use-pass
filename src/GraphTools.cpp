@@ -22,6 +22,7 @@ void DotGraphWriter::DumpFunction(const llvm::Function &F, std::function<std::st
     for (auto &Arg : F.args()) {
         WriteArgumentNode(&Arg, LabelCreator(&Arg));
     }
+
 }
 
 void DotGraphWriter::DumpInstruction(const llvm::Instruction *I, std::string_view Label) const {

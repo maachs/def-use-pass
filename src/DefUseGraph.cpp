@@ -7,6 +7,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/IR/Module.h"
+#include <cstdlib>
 
 #include "DefUseGraph.hpp"
 #include "GraphTools.hpp"
@@ -33,9 +34,11 @@ llvmGetPassPluginInfo() {
 
 namespace llvm {
     PreservedAnalyses DefUseGraphPass::run(Module &M, ModuleAnalysisManager &AM) {
+        const char* EnvPath = std::getenv("DEFUSE_PATH");
+        std::string OutputFileName = EnvPath ? EnvPath : DEFAULT_GRAPH_FILENAME;
         std::error_code ErrorCode;
 
-        llvm::raw_fd_ostream Out(GRAPH_FILENAME, ErrorCode, llvm::sys::fs::OF_None);
+        llvm::raw_fd_ostream Out(OutputFileName, ErrorCode, llvm::sys::fs::OF_None);
 
         if (ErrorCode) {
             errs() << "ERROR: cannot open file " << ErrorCode.message() << "\n";
