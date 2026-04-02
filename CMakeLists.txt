@@ -2,38 +2,25 @@ cmake_minimum_required(VERSION 3.20...3.28)
 project(LLVMDefUseGraph LANGUAGES C CXX)
 
 find_package(LLVM REQUIRED CONFIG)
-
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
-
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_definitions(${LLVM_DEFINITIONS})
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND "${LLVM_DEFINITIONS}")
-add_compile_options(${LLVM_DEFINITIONS_LIST})
-
 set(SOURCE_FILES
-    src/def_use_graph.cpp
+    src/DefUseGraph.cpp
+    src/GraphTools.cpp
 )
-
-include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-include_directories(include)
 
 add_llvm_pass_plugin(DefUseGraph ${SOURCE_FILES})
 
-# FIXME[niten]: opt is already linked against LLVM core libraries, this breaks build (in my case at least)
-llvm_map_components_to_libnames(llvm_libs Core Support Passes IRReader)
-target_link_libraries(DefUseGraph PRIVATE ${llvm_libs})
-
-# FIXME[niten]: Debug already has debug info and hardcoding these flags may be incompatible in some cases
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(DefUseGraph PRIVATE -g -O0)
-endif()
+target_include_directories(DefUseGraph PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${LLVM_INCLUDE_DIRS}
+)
 
 set_target_properties(DefUseGraph PROPERTIES
     PREFIX ""
