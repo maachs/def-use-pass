@@ -13,6 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(SOURCE_FILES
     src/DefUseGraph.cpp
     src/GraphTools.cpp
+    src/Common.cpp
 )
 
 add_llvm_pass_plugin(DefUseGraph ${SOURCE_FILES})

@@ -2,12 +2,8 @@
 #include <stdlib.h>
 #include "Common.hpp"
 
-#ifndef GRAPH_PATH
-#define GRAPH_PATH DEFAULT_GRAPH_FILENAME
-#endif
-
 void dump_end() {
-    FILE *file = fopen(GRAPH_PATH, "a");
+    FILE *file = fopen(get_defuse_path(), "a");
     if (file) {
         fprintf(file, "}\n");
         fclose(file);
@@ -21,7 +17,7 @@ void dump_val(long long val, unsigned long long id) {
         is_registered = 1;
     }
 
-    FILE *file = fopen(GRAPH_PATH, "a");
+    FILE *file = fopen(get_defuse_path(), "a");
     if (file) {
         fprintf(file, "  \"node_0x%llx\" [xlabel=<<font color=\"red\"><b>VAL: %lld</b></font>>, color=red, penwidth=2];\n", id, val);
         fclose(file);

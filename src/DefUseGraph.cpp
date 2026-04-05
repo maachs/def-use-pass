@@ -11,34 +11,14 @@
 
 #include "DefUseGraph.hpp"
 #include "GraphTools.hpp"
+#include "Common.hpp"
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-    return {
-        LLVM_PLUGIN_API_VERSION,
-        "DefUseGraph",
-        "v0.1",
-        [](llvm::PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
-                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                    if (Name == "defuse-graph") {
-                        MPM.addPass(llvm::DefUseGraphPass());
-                        return true;
-                    }
-                    return false;
-                });
-        }
-    };
-}
 
 namespace llvm {
     PreservedAnalyses DefUseGraphPass::run(Module &M, ModuleAnalysisManager &AM) {
-        const char* EnvPath = std::getenv("DEFUSE_PATH");
-        std::string OutputFileName = EnvPath ? EnvPath : DEFAULT_GRAPH_FILENAME;
         std::error_code ErrorCode;
 
-        llvm::raw_fd_ostream Out(OutputFileName, ErrorCode, llvm::sys::fs::OF_None);
+        llvm::raw_fd_ostream Out(get_defuse_path(), ErrorCode, llvm::sys::fs::OF_None);
 
         if (ErrorCode) {
             errs() << "ERROR: cannot open file " << ErrorCode.message() << "\n";
@@ -114,3 +94,22 @@ namespace llvm {
     }
 }
 
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+    return {
+        LLVM_PLUGIN_API_VERSION,
+        "DefUseGraph",
+        "v0.1",
+        [](llvm::PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                    if (Name == "defuse-graph") {
+                        MPM.addPass(llvm::DefUseGraphPass());
+                        return true;
+                    }
+                    return false;
+                });
+        }
+    };
+}

@@ -15,7 +15,7 @@ clang-14 -S -emit-llvm ${TEST_DIR}/${TEST_NAME}.c -o ${TEST_DIR}/${TEST_NAME}.ll
 
 opt-14 -load-pass-plugin=${PLUGIN} -passes='defuse-graph'  ${TEST_DIR}/${TEST_NAME}.ll -S -o ${BUILD_DIR}/test_instr.ll || exit 1
 
-clang-14 ${BUILD_DIR}/test_instr.ll ${SRC_DIR}/runtime.c -DGRAPH_PATH="\"$PATH_TO_DOT\"" -I${INC_DIR} -o ${BUILD_DIR}/run_time_dump || exit 1
+clang-14 ${BUILD_DIR}/test_instr.ll ${SRC_DIR}/runtime.c ${SRC_DIR}/Common.cpp -DGRAPH_PATH="\"$PATH_TO_DOT\"" -I${INC_DIR} -o ${BUILD_DIR}/run_time_dump || exit 1
 
 ./build/run_time_dump
 
