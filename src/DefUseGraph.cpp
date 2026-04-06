@@ -29,13 +29,12 @@ namespace llvm {
 
         LLVMContext &Ctx = M.getContext();
         Type *VoidTy = Type::getVoidTy(Ctx);
-        Type *Int32Ty = Type::getInt32Ty(Ctx);
         Type *Int64Ty = Type::getInt64Ty(Ctx);
-        FunctionType *PrintFuncTy = FunctionType::get(VoidTy, {Int32Ty, Int64Ty}, false);
-        FunctionCallee PrintFunc = M.getOrInsertFunction("dump_val", PrintFuncTy);
+        FunctionType *PrintFuncTy = FunctionType::get(VoidTy, {Int64Ty, Int64Ty}, false);
+        FunctionCallee PrintFunc = M.getOrInsertFunction(DUMP_FUNC, PrintFuncTy);
 
         FunctionType *EndFuncTy = FunctionType::get(VoidTy, false);
-        FunctionCallee EndFunc = M.getOrInsertFunction("dump_end", EndFuncTy);
+        FunctionCallee EndFunc = M.getOrInsertFunction(DUMP_END, EndFuncTy);
 
         bool IsModified = false;
 
@@ -49,16 +48,37 @@ namespace llvm {
 
             for (auto &BB : F) {
                 for (auto &I : BB) {
+                    if (auto *Call = dyn_cast<CallInst>(&I)) {
+                        Function *Callee = Call->getCalledFunction();
+                        if (Callee && Callee->getName() == llvm::StringRef(DUMP_FUNC)) {
+                            continue;
+                        }
+                    }
+                    if ((isa<PtrToIntInst>(&I) || isa<ZExtInst>(&I) || isa<BitCastInst>(&I)) && I.getName().empty()) {
+                        continue;
+                    }
 
                     GraphWrite.DumpInstruction(&I, GetLabel(&I));
 
-                    if (I.getType()->isIntegerTy(cast<IntegerType>(Int32Ty)->getBitWidth())) {
+                    if (!I.getType()->isVoidTy()) {
                         if (isa<PHINode>(&I) || I.isTerminator()) continue;
 
                         IRBuilder<> Builder(I.getNextNode());
 
-                        Value *AddrAsInt = Builder.getInt64(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(&I)));
-                        Builder.CreateCall(PrintFunc, {&I, AddrAsInt});
+                        Value *ValToLog = &I;
+
+                        if (ValToLog->getType()->isPointerTy()) {
+                            ValToLog = Builder.CreatePtrToInt(ValToLog, Int64Ty);
+                        } else if (ValToLog->getType()->isIntegerTy()) {
+                            ValToLog = Builder.CreateZExtOrTrunc(ValToLog, Int64Ty);
+                        } else if (ValToLog->getType()->isFloatingPointTy()) {
+                            ValToLog = Builder.CreateBitCast(ValToLog, Int64Ty);
+                        } else {
+                            continue;
+                        }
+
+                        Value *AddrAsInt = Builder.getInt64(reinterpret_cast<uintptr_t>(&I));
+                        Builder.CreateCall(PrintFunc, {ValToLog, AddrAsInt});
 
                         IsModified = true;
                     }

@@ -5,7 +5,7 @@ BUILD_DIR="build"
 INC_DIR="include"
 PLUGIN="./build/DefUseGraph.so"
 
-PATH_TO_DOT="./build/my_analysis.dot"
+PATH_TO_DOT="./build/defuse_graph.dot"
 
 export DEFUSE_PATH="$PATH_TO_DOT"
 
