@@ -7,7 +7,7 @@
 ```bash
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake ..
 make
 ```
 Prepare tests/test.c file
@@ -17,6 +17,10 @@ Prepare tests/test.c file
 cd ..
 chmod +x run.sh
 ./run.sh
+```
+Tests
+```bash
+./build/unit_tests
 ```
 # Example of result graph
 ![alt text](./images/result.png)
