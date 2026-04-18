@@ -10,8 +10,7 @@ cd build
 cmake ..
 make
 ```
-Prepare tests/test.c file
-
+Prepare tests/test1.c and tests/test2.c files
 
 ```bash
 cd ..
@@ -23,4 +22,7 @@ Tests
 ./build/unit_tests
 ```
 # Example of result graph
-![alt text](./images/result.png)
+One module
+![alt text](./images/result_one_module.png)
+Two modules
+![alt text](./images/result_two_modules.png)

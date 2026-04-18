@@ -15,6 +15,12 @@
 
 namespace llvm {
 PreservedAnalyses DefUseGraphPass::run(Module &M, ModuleAnalysisManager &AM) {
+  if (M.getModuleFlag("DefUseGraph_Processed")) {
+    return PreservedAnalyses::all();
+  }
+
+  M.addModuleFlag(Module::ModFlagBehavior::Error, "DefUseGraph_Processed", 1);
+
   std::error_code ErrorCode;
 
   llvm::raw_fd_ostream Out(get_defuse_path(), ErrorCode,
@@ -108,7 +114,10 @@ std::string DefUseGraphPass::Sanitize(std::string_view Str) {
       Res += "\\\"";
     else if (CurChar == '\n')
       Res += "\\l";
-    else
+    else if (CurChar == '{' || CurChar == '}' || CurChar == '|') {
+      Res += "\\";
+      Res += CurChar;
+    } else
       Res += CurChar;
   }
   return Res;
@@ -124,16 +133,21 @@ std::string DefUseGraphPass::GetLabel(const llvm::Value *V) {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "DefUseGraph", "v0.1",
-          [](llvm::PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
-                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                  if (Name == "defuse-graph") {
-                    MPM.addPass(llvm::DefUseGraphPass());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
+  return {
+      LLVM_PLUGIN_API_VERSION, "DefUseGraph", "v0.1",
+      [](llvm::PassBuilder &PB) {
+        PB.registerPipelineParsingCallback(
+            [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
+               llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+              if (Name == "defuse-graph") {
+                MPM.addPass(llvm::DefUseGraphPass());
+                return true;
+              }
+              return false;
+            });
+        PB.registerOptimizerLastEPCallback(
+            [](llvm::ModulePassManager &MPM, llvm::OptimizationLevel Level) {
+              MPM.addPass(llvm::DefUseGraphPass());
+            });
+      }};
 }
