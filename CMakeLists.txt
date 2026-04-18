@@ -57,3 +57,11 @@ target_include_directories(unit_tests PRIVATE
 
 add_test(NAME MyProjectTests COMMAND unit_tests)
 
+file(GLOB_RECURSE ALL_SOURCE_FILES
+     "src/*.cpp" "src/*.c"
+     "include/*.hpp" "include/*.h")
+
+add_custom_target(format
+    COMMAND clang-format -i ${ALL_SOURCE_FILES}
+    COMMENT "Formatting code with LLVM style..."
+)

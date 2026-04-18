@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-const char* get_defuse_path();
+const char *get_defuse_path();
 
 #ifdef __cplusplus
 }

@@ -9,6 +9,8 @@ PATH_TO_DOT="./build/defuse_graph.dot"
 
 export DEFUSE_PATH="$PATH_TO_DOT"
 
+clang-format -i include/*.hpp src/*.cpp src/runtime.c
+
 rm -f ${PATH_TO_DOT} result.png
 
 clang-14 -S -emit-llvm ${TEST_DIR}/${TEST_NAME}.c -o ${TEST_DIR}/${TEST_NAME}.ll || exit 1
